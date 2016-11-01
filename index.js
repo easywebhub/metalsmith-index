@@ -17,9 +17,14 @@ const defaultOptions = {
 */
 
 function writeIndexes(files, options) {
-  let fd = fs.openSync(options.indexPath, 'w');
+  let stream = fs.createWriteStream(options.indexPath, {
+    flags: 'w+',
+    defaultEncoding: 'utf8',
+    fd: null,
+    autoClose: true
+  });
   // console.log('write start json')
-  fs.write(fd, '{\r\n');
+  stream.write('{\r\n');
 
   let isFirst = true;
   let propProcessor;
@@ -36,7 +41,7 @@ function writeIndexes(files, options) {
     if (options.fields.indexOf('contents') != -1) options.fields.splice(options.fields.indexOf('contents'), 1);
     if (options.fields.indexOf('stats') != -1) options.fields.splice(options.fields.indexOf('stats'), 1);
     if (options.fields.indexOf('mode') != -1) options.fields.splice(options.fields.indexOf('mode'), 1);
-    propProcessor = function (obj) {      
+    propProcessor = function (obj) {
       let props = {};
       options.fields.forEach(function (field) {
         props[field] = obj[field];
@@ -48,22 +53,22 @@ function writeIndexes(files, options) {
     if (!files.hasOwnProperty(filePath)) continue;
     if (!isFirst) {
       //console.log('write sep end prop');
-      fs.write(fd, ',\r\n');
+      stream.write(',\r\n');
     }
 
     isFirst = false;
 
     let content = files[filePath];
     // console.log('write key', filePath)
-    fs.write(fd, `"${filePath.replace('.html', '.md')}": `);
+    stream.write(`"${filePath.replace('.html', '.md')}": `);
 
-    let indexContent = propProcessor(content);    
+    let indexContent = propProcessor(content);
     // console.log('write value')
-    fs.write(fd, JSON.stringify(indexContent));
+    stream.write(JSON.stringify(indexContent));
   }
   // console.log('write end json')
-  fs.write(fd, '\r\n}\r\n');
-  fs.close(fd);
+  stream.write('\r\n}\r\n');
+  stream.end();
 }
 
 function plugin(options) {
